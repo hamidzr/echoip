@@ -9,7 +9,7 @@ COPY . .
 
 # download and extract GeoLite2 Country database
 RUN apt-get update && apt-get install -y curl tar
-RUN curl -J -L -u $MAXMIND_ACC_ID:$MAXMIND_LICENSE_KEY "https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz" -o GeoLite2-Country.tar.gz
+RUN curl -v -J -L -u $MAXMIND_ACC_ID:$MAXMIND_LICENSE_KEY "https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz" -o GeoLite2-Country.tar.gz
 RUN tar -xzvf GeoLite2-Country.tar.gz
 RUN find . -name '*.mmdb' -exec cp '{}' ./GeoLite2-Country.mmdb ';'
 

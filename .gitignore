@@ -3,3 +3,5 @@
 /vendor/
 .vscode/
 /bin/
+GeoLite2-Country.mmdb
+.envrc

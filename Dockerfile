@@ -17,6 +17,8 @@ RUN apk add --no-cache curl tar
 COPY --from=build /go/bin/echoip /opt/echoip/
 COPY html /opt/echoip/html
 COPY scripts/prep-maxmind.sh /opt/echoip/prep-maxmind.sh
+COPY docker-entrypoint.sh /opt/echoip/docker-entrypoint.sh
+RUN chmod +x /opt/echoip/docker-entrypoint.sh
 
 WORKDIR /opt/echoip
-ENTRYPOINT ["/bin/sh", "-c", "if [ ! -f /opt/echoip/GeoLite2-Country.mmdb ]; then sh /opt/echoip/prep-maxmind.sh; fi && /opt/echoip/echoip -f /opt/echoip/GeoLite2-Country.mmdb -t html"]
+ENTRYPOINT ["/opt/echoip/docker-entrypoint.sh"]

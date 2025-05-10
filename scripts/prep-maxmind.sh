@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 # load env vars from .env if present
 if [ -f .env ]; then
@@ -23,6 +23,6 @@ if [ -z "$mmdb_path" ]; then
   exit 1
 fi
 
-cp "$mmdb_path" ./GeoLite2-Country.mmdb
+cp "$mmdb_path" /opt/echoip/GeoLite2-Country.mmdb
 rm -rf GeoLite2-Country.tar.gz ./*GeoLite2*/ # clean up extracted dirs
 echo "GeoLite2-Country.mmdb ready"

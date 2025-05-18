@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -ex
+
 # load env vars from .env if present
 if [ -f .env ]; then
   . .env
@@ -11,9 +13,11 @@ if [ -z "$MAXMIND_ACC_ID" ] || [ -z "$MAXMIND_LICENSE_KEY" ]; then
 fi
 
 echo "downloading GeoLite2-Country database..."
+set +x
 curl -sSL -u "$MAXMIND_ACC_ID:$MAXMIND_LICENSE_KEY" \
   "https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz" \
   -o GeoLite2-Country.tar.gz
+set -x
 
 echo "extracting mmdb..."
 tar -xzvf GeoLite2-Country.tar.gz
@@ -23,6 +27,8 @@ if [ -z "$mmdb_path" ]; then
   exit 1
 fi
 
-cp "$mmdb_path" /opt/echoip/GeoLite2-Country.mmdb
+out_dir=/opt/echoip
+mkdir -p $out_dir
+cp "$mmdb_path" $out_dir/GeoLite2-Country.mmdb
 rm -rf GeoLite2-Country.tar.gz ./*GeoLite2*/ # clean up extracted dirs
 echo "GeoLite2-Country.mmdb ready"

@@ -7,14 +7,11 @@ if [ -f .env ]; then
   . .env
 fi
 
-if [ -z "${MAXMIND_ACC_ID:-}" ] || [ -z "${MAXMIND_LICENSE_KEY:-}" ]; then
-  echo "MAXMIND_ACC_ID and MAXMIND_LICENSE_KEY must be set in the environment or .env"
-  exit 1
-fi
+geoip_source=${GEOIP_SOURCE:-dbip}
+out_dir=${GEOIP_DIR:-/opt/echoip}
+mkdir -p "$out_dir"
 
-set -x
-
-download_db() {
+download_maxmind_db() {
   db_name="$1"
   out_path="$2"
   archive="${db_name}.tar.gz"
@@ -39,9 +36,40 @@ download_db() {
   echo "${db_name}.mmdb ready"
 }
 
-out_dir=/opt/echoip
-mkdir -p "$out_dir"
+download_dbip_db() {
+  set -x
+  db_name="$1"
+  out_path="$2"
+  month=$(date -u +%Y-%m)
+  archive="${db_name}-${month}.mmdb.gz"
 
-download_db GeoLite2-Country "$out_dir/GeoLite2-Country.mmdb"
-download_db GeoLite2-City "$out_dir/GeoLite2-City.mmdb"
-download_db GeoLite2-ASN "$out_dir/GeoLite2-ASN.mmdb"
+  echo "downloading ${db_name} database..."
+  curl -fsSLo "$archive" "https://download.db-ip.com/free/${archive}"
+
+  echo "extracting ${db_name} mmdb..."
+  gzip -dc "$archive" > "$out_path"
+  rm -f "$archive"
+  echo "${db_name}.mmdb ready"
+}
+
+case "$geoip_source" in
+  dbip)
+    download_dbip_db dbip-city-lite "$out_dir/dbip-city-lite.mmdb"
+    download_dbip_db dbip-asn-lite "$out_dir/dbip-asn-lite.mmdb"
+    ;;
+  maxmind)
+    maxmind_account_id=${MAXMIND_ACC_ID:-${MAXMIND_ACCOUNT_ID:-}}
+    if [ -z "$maxmind_account_id" ] || [ -z "${MAXMIND_LICENSE_KEY:-}" ]; then
+      echo "MAXMIND_ACC_ID and MAXMIND_LICENSE_KEY must be set in the environment or .env"
+      exit 1
+    fi
+    MAXMIND_ACC_ID=$maxmind_account_id
+    download_maxmind_db GeoLite2-Country "$out_dir/GeoLite2-Country.mmdb"
+    download_maxmind_db GeoLite2-City "$out_dir/GeoLite2-City.mmdb"
+    download_maxmind_db GeoLite2-ASN "$out_dir/GeoLite2-ASN.mmdb"
+    ;;
+  *)
+    echo "unsupported GEOIP_SOURCE: $geoip_source" >&2
+    exit 1
+    ;;
+esac

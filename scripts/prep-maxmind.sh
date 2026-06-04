@@ -1,16 +1,18 @@
 #!/usr/bin/env sh
 
-set -ex
+set -eu
 
 # load env vars from .env if present
 if [ -f .env ]; then
   . .env
 fi
 
-if [ -z "$MAXMIND_ACC_ID" ] || [ -z "$MAXMIND_LICENSE_KEY" ]; then
+if [ -z "${MAXMIND_ACC_ID:-}" ] || [ -z "${MAXMIND_LICENSE_KEY:-}" ]; then
   echo "MAXMIND_ACC_ID and MAXMIND_LICENSE_KEY must be set in the environment or .env"
   exit 1
 fi
+
+set -x
 
 download_db() {
   db_name="$1"

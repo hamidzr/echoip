@@ -12,23 +12,34 @@ if [ -z "$MAXMIND_ACC_ID" ] || [ -z "$MAXMIND_LICENSE_KEY" ]; then
   exit 1
 fi
 
-echo "downloading GeoLite2-Country database..."
-set +x
-curl -sSL -u "$MAXMIND_ACC_ID:$MAXMIND_LICENSE_KEY" \
-  "https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz" \
-  -o GeoLite2-Country.tar.gz
-set -x
+download_db() {
+  db_name="$1"
+  out_path="$2"
+  archive="${db_name}.tar.gz"
 
-echo "extracting mmdb..."
-tar -xzvf GeoLite2-Country.tar.gz
-mmdb_path=$(find . -name '*.mmdb' | head -n 1)
-if [ -z "$mmdb_path" ]; then
-  echo "could not find .mmdb file after extraction"
-  exit 1
-fi
+  echo "downloading ${db_name} database..."
+  set +x
+  curl -sSL -u "$MAXMIND_ACC_ID:$MAXMIND_LICENSE_KEY" \
+    "https://download.maxmind.com/geoip/databases/${db_name}/download?suffix=tar.gz" \
+    -o "$archive"
+  set -x
+
+  echo "extracting ${db_name} mmdb..."
+  tar -xzvf "$archive"
+  mmdb_path=$(find . -name "${db_name}.mmdb" | head -n 1)
+  if [ -z "$mmdb_path" ]; then
+    echo "could not find ${db_name}.mmdb after extraction"
+    exit 1
+  fi
+
+  cp "$mmdb_path" "$out_path"
+  rm -rf "$archive" ./*GeoLite2*/ # clean up extracted dirs
+  echo "${db_name}.mmdb ready"
+}
 
 out_dir=/opt/echoip
-mkdir -p $out_dir
-cp "$mmdb_path" $out_dir/GeoLite2-Country.mmdb
-rm -rf GeoLite2-Country.tar.gz ./*GeoLite2*/ # clean up extracted dirs
-echo "GeoLite2-Country.mmdb ready"
+mkdir -p "$out_dir"
+
+download_db GeoLite2-Country "$out_dir/GeoLite2-Country.mmdb"
+download_db GeoLite2-City "$out_dir/GeoLite2-City.mmdb"
+download_db GeoLite2-ASN "$out_dir/GeoLite2-ASN.mmdb"

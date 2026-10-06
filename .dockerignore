@@ -1,2 +1,16 @@
 Dockerfile
 Dockerfile.geoip
+.git
+**/.env
+**/.env.*
+!**/.env.example
+.envrc
+*.log
+.DS_Store
+.vscode
+.idea
+.agents
+.pi
+bin
+vendor
+**/node_modules

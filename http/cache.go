@@ -40,12 +40,16 @@ func key(ip net.IP) uint64 {
 }
 
 func (c *Cache) Set(ip net.IP, resp Response) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.capacity == 0 {
 		return
 	}
 	k := key(ip)
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	if current, ok := c.entries[k]; ok {
+		c.values.Remove(current)
+		delete(c.entries, k)
+	}
 	minEvictions := len(c.entries) - c.capacity + 1
 	if minEvictions > 0 { // At or above capacity. Shrink the cache
 		evicted := 0
@@ -58,10 +62,6 @@ func (c *Cache) Set(ip net.IP, resp Response) {
 			evicted++
 		}
 		c.evictions += uint64(evicted)
-	}
-	current, ok := c.entries[k]
-	if ok {
-		c.values.Remove(current)
 	}
 	c.entries[k] = c.values.PushBack(resp)
 }

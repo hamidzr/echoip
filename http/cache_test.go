@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 )
 
@@ -58,6 +59,54 @@ func TestCacheDuplicate(t *testing.T) {
 	if got := c.values.Len(); got != want {
 		t.Errorf("want %d values, got %d", want, got)
 	}
+}
+
+func TestCacheReplaceAtCapacity(t *testing.T) {
+	for replace := 1; replace <= 3; replace++ {
+		t.Run(fmt.Sprint(replace), func(t *testing.T) {
+			c := NewCache(3)
+			for i := 1; i <= 3; i++ {
+				ip := net.ParseIP(fmt.Sprintf("192.0.2.%d", i))
+				c.Set(ip, Response{IP: ip, Country: "original"})
+			}
+			ip := net.ParseIP(fmt.Sprintf("192.0.2.%d", replace))
+			c.Set(ip, Response{IP: ip, Country: "updated"})
+			if got := c.Stats(); got.Size != 3 || got.Evictions != 0 {
+				t.Errorf("replacement changed cache occupancy: %+v", got)
+			}
+			for i := 1; i <= 3; i++ {
+				ip := net.ParseIP(fmt.Sprintf("192.0.2.%d", i))
+				response, ok := c.Get(ip)
+				if !ok {
+					t.Errorf("replacement evicted IP %s", ip)
+				} else if i == replace && response.Country != "updated" {
+					t.Errorf("replacement kept old response: %+v", response)
+				}
+			}
+		})
+	}
+}
+
+func TestCacheConcurrentResize(t *testing.T) {
+	c := NewCache(3)
+	ip := net.ParseIP("192.0.2.1")
+	var workers sync.WaitGroup
+	workers.Add(2)
+	go func() {
+		defer workers.Done()
+		for i := 0; i < 1000; i++ {
+			c.Set(ip, Response{IP: ip})
+		}
+	}()
+	go func() {
+		defer workers.Done()
+		for i := 0; i < 1000; i++ {
+			if err := c.Resize(i % 4); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+	workers.Wait()
 }
 
 func TestCacheResize(t *testing.T) {

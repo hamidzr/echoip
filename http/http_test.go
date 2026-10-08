@@ -74,6 +74,52 @@ func httpPost(url, body string) (*http.Response, string, error) {
 	return res, string(data), nil
 }
 
+func TestForwardedForWhitespace(t *testing.T) {
+	server := testServer()
+	server.IPHeaders = []string{"X-Forwarded-For"}
+	s := httptest.NewServer(server.Handler())
+	t.Cleanup(s.Close)
+
+	for _, tt := range []struct {
+		name   string
+		header string
+		path   string
+		ip     string
+		status int
+	}{
+		{"IPv4 space", "198.51.100.42 , 203.0.113.1", "/ip", "198.51.100.42", 200},
+		{"IPv4 tab", "198.51.100.42\t, 203.0.113.1", "/ip", "198.51.100.42", 200},
+		{"IPv6 space", "2001:db8::42 , 2001:db8::1", "/ip", "2001:db8::42", 200},
+		{"ordinary chain", "198.51.100.42, 203.0.113.1", "/ip", "198.51.100.42", 200},
+		{"single address", "198.51.100.42", "/ip", "198.51.100.42", 200},
+		{"invalid first address", "invalid , 198.51.100.42", "/ip", "", 400},
+		{"query takes precedence", "invalid , 198.51.100.42", "/ip?ip=2001:db8::2", "2001:db8::2", 200},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := http.NewRequest(http.MethodGet, s.URL+tt.path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r.Header.Set("X-Forwarded-For", tt.header)
+			response, err := s.Client().Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer response.Body.Close()
+			body, err := ioutil.ReadAll(response.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if response.StatusCode != tt.status {
+				t.Fatalf("expected status %d, got %d: %s", tt.status, response.StatusCode, body)
+			}
+			if tt.status == http.StatusOK && string(body) != tt.ip+"\n" {
+				t.Errorf("expected IP %q, got %q", tt.ip, body)
+			}
+		})
+	}
+}
+
 func TestCLIHandlers(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 	s := httptest.NewServer(testServer().Handler())

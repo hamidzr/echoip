@@ -69,10 +69,10 @@ func New(db geo.Reader, cache *Cache, profile bool) *Server {
 
 func ipFromForwardedForHeader(v string) string {
 	sep := strings.Index(v, ",")
-	if sep == -1 {
-		return v
+	if sep != -1 {
+		v = v[:sep]
 	}
-	return v[:sep]
+	return strings.Trim(v, " \t")
 }
 
 // ipFromRequest detects the IP address for this transaction.

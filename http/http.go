@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
@@ -467,8 +468,26 @@ func (s *Server) Handler() http.Handler {
 	return r.Handler()
 }
 
+// httpServer returns a server with timeouts and header limits set, so slow clients cannot hold connections open.
+func (s *Server) httpServer(addr string) *http.Server {
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    16 << 10,
+	}
+	if s.profile {
+		// pprof profile and trace handlers stream for longer than the write timeout
+		srv.WriteTimeout = 0
+	}
+	return srv
+}
+
 func (s *Server) ListenAndServe(addr string) error {
-	return http.ListenAndServe(addr, s.Handler())
+	return s.httpServer(addr).ListenAndServe()
 }
 
 func formatCoordinate(c float64) string {

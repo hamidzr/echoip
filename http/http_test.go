@@ -324,3 +324,13 @@ func TestCLIMatcher(t *testing.T) {
 		}
 	}
 }
+
+func TestHTTPServerTimeouts(t *testing.T) {
+	srv := New(&testDb{}, NewCache(100), false).httpServer(":0")
+	if srv.ReadHeaderTimeout == 0 || srv.ReadTimeout == 0 || srv.WriteTimeout == 0 || srv.IdleTimeout == 0 || srv.MaxHeaderBytes == 0 {
+		t.Errorf("expected timeouts and header limit to be set: %+v", srv)
+	}
+	if New(&testDb{}, NewCache(100), true).httpServer(":0").WriteTimeout != 0 {
+		t.Error("expected no write timeout when profiling")
+	}
+}

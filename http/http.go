@@ -328,12 +328,33 @@ func (s *Server) cacheHandler(w http.ResponseWriter, r *http.Request) *appError 
 	return nil
 }
 
+// browser icons live in the template dir. content types are explicit so they do not depend on
+// the runtime image's mime table
+var iconFiles = map[string]string{
+	"favicon.ico":          "image/x-icon",
+	"favicon.svg":          "image/svg+xml",
+	"apple-touch-icon.png": "image/png",
+}
+
+func (s *Server) iconHandler(name, contentType string) appHandler {
+	return func(w http.ResponseWriter, r *http.Request) *appError {
+		w.Header().Set("Content-Type", contentType)
+		http.ServeFile(w, r, filepath.Join(s.Template, name))
+		return nil
+	}
+}
+
 func (s *Server) DefaultHandler(w http.ResponseWriter, r *http.Request) *appError {
 	response, err := s.newResponse(r)
 	if err != nil {
 		return badRequest(err).WithMessage(err.Error())
 	}
-	t, err := template.ParseGlob(s.Template + "/*")
+	// only .html and .svg files are templates; index.html sorts first so it stays the root.
+	// browser icons share the dir but are binary
+	t, err := template.ParseGlob(s.Template + "/*.html")
+	if err == nil {
+		t, err = t.ParseGlob(s.Template + "/*.svg")
+	}
 	if err != nil {
 		return internalServerError(err)
 	}
@@ -447,6 +468,9 @@ func (s *Server) Handler() http.Handler {
 	// Browser
 	if s.Template != "" {
 		r.Route("GET", "/", s.DefaultHandler)
+		for name, contentType := range iconFiles {
+			r.Route("GET", "/"+name, s.iconHandler(name, contentType))
+		}
 	}
 
 	// Port testing

@@ -15,7 +15,7 @@ Fork of `mpolden/echoip` (origin `hamidzr/echoip`, trunk `master`). Go IP lookup
 - `http/http.go`: handlers and route table in `Server.Handler()`. Route order matters: first match wins (JSON Accept, CLI user-agent matcher, then HTML). Geo routes register only when a DB is loaded.
 - `http/router.go`: tiny custom router. `http/cache.go`: bounded response cache keyed by IP hash (`-C 0` disables).
 - `iputil/geo/geo.go`: mmdb reader (`oschwald/geoip2-golang`); no tests. `useragent/`: CLI client detection.
-- `html/`: Go `html/template` files loaded via `ParseGlob(<dir>/*)`; every file in the dir is parsed.
+- `html/`: Go `html/template` files; every `*.html` and `*.svg` in the dir is parsed and `index.html` is the root. It also holds the browser icons (`favicon.ico`, `favicon.svg`, `apple-touch-icon.png`) served from disk by `iconHandler`; add new icon names to `iconFiles`.
 
 ## Docker and runtime
 

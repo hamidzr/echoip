@@ -334,3 +334,38 @@ func TestHTTPServerTimeouts(t *testing.T) {
 		t.Error("expected no write timeout when profiling")
 	}
 }
+
+func TestIconHandlers(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	srv := testServer()
+	srv.Template = "../html"
+	s := httptest.NewServer(srv.Handler())
+	defer s.Close()
+
+	for path, contentType := range map[string]string{
+		"/favicon.ico":          "image/x-icon",
+		"/favicon.svg":          "image/svg+xml",
+		"/apple-touch-icon.png": "image/png",
+	} {
+		res, err := http.Get(s.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if res.StatusCode != 200 {
+			t.Errorf("%s: expected 200, got %d", path, res.StatusCode)
+		}
+		if got := res.Header.Get("Content-Type"); got != contentType {
+			t.Errorf("%s: expected %q, got %q", path, contentType, got)
+		}
+	}
+
+	// icons share the template dir; the page must still render index.html
+	out, status, err := httpGet(s.URL+"/", "", "Mozilla/5.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != 200 || !strings.Contains(out, `<link rel="icon" href="/favicon.ico"`) {
+		t.Errorf("expected index page with icon links, got %d: %.200q", status, out)
+	}
+}

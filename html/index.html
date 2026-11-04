@@ -33,7 +33,7 @@
     {{ template "script.html" . }} {{ template "styles.html" . }}
   </head>
   <body>
-    <div class="content">
+    <main class="content">
       <div class="pure-g gutters center">
         <div class="pure-u-1 pure-u-md-2-3">
           <div class="l-box">
@@ -181,6 +181,7 @@
             <div class="pure-u-1 pure-u-md-1-1">
               <h2>Map</h2>
               <iframe
+                title="Map of the approximate location of {{ .IP }}"
                 width="100%"
                 height="350"
                 frameborder="0"
@@ -329,6 +330,6 @@
           </div>
         </div>
       </div>
-    </div>
+    </main>
   </body>
 </html>

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -367,5 +368,28 @@ func TestIconHandlers(t *testing.T) {
 	}
 	if status != 200 || !strings.Contains(out, `<link rel="icon" href="/favicon.ico"`) {
 		t.Errorf("expected index page with icon links, got %d: %.200q", status, out)
+	}
+}
+
+func TestIndexLandmarks(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	srv := testServer()
+	srv.Template = "../html"
+	s := httptest.NewServer(srv.Handler())
+	defer s.Close()
+
+	out, status, err := httpGet(s.URL+"/", "", "Mozilla/5.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != 200 {
+		t.Fatalf("expected 200, got %d", status)
+	}
+	// page content sits in one main landmark and the map frame has an accessible name
+	if n := strings.Count(out, "<main"); n != 1 {
+		t.Errorf("expected one <main> landmark, got %d", n)
+	}
+	if !regexp.MustCompile(`<iframe\s+title="Map of the approximate location of `).MatchString(out) {
+		t.Errorf("expected titled map iframe, got %.200q", out)
 	}
 }

@@ -196,57 +196,25 @@ func (s *Server) CLIHandler(w http.ResponseWriter, r *http.Request) *appError {
 	return nil
 }
 
-func (s *Server) CLICountryHandler(w http.ResponseWriter, r *http.Request) *appError {
-	response, err := s.newResponse(r)
-	if err != nil {
-		return badRequest(err).WithMessage(err.Error()).AsJSON()
+// cliField serves one plain text field of the lookup response.
+func (s *Server) cliField(field func(Response) string) appHandler {
+	return func(w http.ResponseWriter, r *http.Request) *appError {
+		response, err := s.newResponse(r)
+		if err != nil {
+			return badRequest(err).WithMessage(err.Error()).AsJSON()
+		}
+		fmt.Fprintln(w, field(response))
+		return nil
 	}
-	fmt.Fprintln(w, response.Country)
-	return nil
 }
 
-func (s *Server) CLICountryISOHandler(w http.ResponseWriter, r *http.Request) *appError {
-	response, err := s.newResponse(r)
+func writeJSON(w http.ResponseWriter, v interface{}) *appError {
+	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		return badRequest(err).WithMessage(err.Error()).AsJSON()
+		return internalServerError(err).AsJSON()
 	}
-	fmt.Fprintln(w, response.CountryISO)
-	return nil
-}
-
-func (s *Server) CLICityHandler(w http.ResponseWriter, r *http.Request) *appError {
-	response, err := s.newResponse(r)
-	if err != nil {
-		return badRequest(err).WithMessage(err.Error()).AsJSON()
-	}
-	fmt.Fprintln(w, response.City)
-	return nil
-}
-
-func (s *Server) CLICoordinatesHandler(w http.ResponseWriter, r *http.Request) *appError {
-	response, err := s.newResponse(r)
-	if err != nil {
-		return badRequest(err).WithMessage(err.Error()).AsJSON()
-	}
-	fmt.Fprintf(w, "%s,%s\n", formatCoordinate(response.Latitude), formatCoordinate(response.Longitude))
-	return nil
-}
-
-func (s *Server) CLIASNHandler(w http.ResponseWriter, r *http.Request) *appError {
-	response, err := s.newResponse(r)
-	if err != nil {
-		return badRequest(err).WithMessage(err.Error()).AsJSON()
-	}
-	fmt.Fprintf(w, "%s\n", response.ASN)
-	return nil
-}
-
-func (s *Server) CLIASNOrgHandler(w http.ResponseWriter, r *http.Request) *appError {
-	response, err := s.newResponse(r)
-	if err != nil {
-		return badRequest(err).WithMessage(err.Error()).AsJSON()
-	}
-	fmt.Fprintf(w, "%s\n", response.ASNOrg)
+	w.Header().Set("Content-Type", jsonMediaType)
+	w.Write(b)
 	return nil
 }
 
@@ -255,13 +223,7 @@ func (s *Server) JSONHandler(w http.ResponseWriter, r *http.Request) *appError {
 	if err != nil {
 		return badRequest(err).WithMessage(err.Error()).AsJSON()
 	}
-	b, err := json.MarshalIndent(response, "", "  ")
-	if err != nil {
-		return internalServerError(err).AsJSON()
-	}
-	w.Header().Set("Content-Type", jsonMediaType)
-	w.Write(b)
-	return nil
+	return writeJSON(w, response)
 }
 
 func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) *appError {
@@ -275,13 +237,7 @@ func (s *Server) PortHandler(w http.ResponseWriter, r *http.Request) *appError {
 	if err != nil {
 		return badRequest(err).WithMessage(err.Error()).AsJSON()
 	}
-	b, err := json.MarshalIndent(response, "", "  ")
-	if err != nil {
-		return internalServerError(err).AsJSON()
-	}
-	w.Header().Set("Content-Type", jsonMediaType)
-	w.Write(b)
-	return nil
+	return writeJSON(w, response)
 }
 
 func (s *Server) cacheResizeHandler(w http.ResponseWriter, r *http.Request) *appError {
@@ -299,13 +255,7 @@ func (s *Server) cacheResizeHandler(w http.ResponseWriter, r *http.Request) *app
 	data := struct {
 		Message string `json:"message"`
 	}{fmt.Sprintf("Changed cache capacity to %d.", capacity)}
-	b, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return internalServerError(err).AsJSON()
-	}
-	w.Header().Set("Content-Type", jsonMediaType)
-	w.Write(b)
-	return nil
+	return writeJSON(w, data)
 }
 
 func (s *Server) cacheHandler(w http.ResponseWriter, r *http.Request) *appError {
@@ -319,13 +269,7 @@ func (s *Server) cacheHandler(w http.ResponseWriter, r *http.Request) *appError 
 		cacheStats.Capacity,
 		cacheStats.Evictions,
 	}
-	b, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return internalServerError(err).AsJSON()
-	}
-	w.Header().Set("Content-Type", jsonMediaType)
-	w.Write(b)
-	return nil
+	return writeJSON(w, data)
 }
 
 // browser icons live in the template dir. content types are explicit so they do not depend on
@@ -457,12 +401,14 @@ func (s *Server) Handler() http.Handler {
 	r.Route("GET", "/", s.CLIHandler).Header("Accept", textMediaType)
 	r.Route("GET", "/ip", s.CLIHandler)
 	if !s.gr.IsEmpty() {
-		r.Route("GET", "/country", s.CLICountryHandler)
-		r.Route("GET", "/country-iso", s.CLICountryISOHandler)
-		r.Route("GET", "/city", s.CLICityHandler)
-		r.Route("GET", "/coordinates", s.CLICoordinatesHandler)
-		r.Route("GET", "/asn", s.CLIASNHandler)
-		r.Route("GET", "/asn-org", s.CLIASNOrgHandler)
+		r.Route("GET", "/country", s.cliField(func(r Response) string { return r.Country }))
+		r.Route("GET", "/country-iso", s.cliField(func(r Response) string { return r.CountryISO }))
+		r.Route("GET", "/city", s.cliField(func(r Response) string { return r.City }))
+		r.Route("GET", "/coordinates", s.cliField(func(r Response) string {
+			return formatCoordinate(r.Latitude) + "," + formatCoordinate(r.Longitude)
+		}))
+		r.Route("GET", "/asn", s.cliField(func(r Response) string { return r.ASN }))
+		r.Route("GET", "/asn-org", s.cliField(func(r Response) string { return r.ASNOrg }))
 	}
 
 	// Browser

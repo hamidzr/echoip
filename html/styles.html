@@ -21,6 +21,13 @@
   active {
     background: #d7d7d7;
   }
+  /* pure resets button and input outlines; keep a visible keyboard focus ring */
+  a:focus-visible,
+  .pure-button:focus-visible,
+  .pure-form input[type]:focus-visible {
+    outline: 2px solid #1f6feb;
+    outline-offset: 2px;
+  }
   .ip {
     border: 1px solid #cbcbcb;
     background: #f2f2f2;

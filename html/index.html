@@ -168,13 +168,7 @@
               </tr>
               {{ end }} {{ end }}
             </table>
-            {{ if .Country }}
-            <p>
-              This information is provided from the GeoLite2 database created by
-              MaxMind, available from
-              <a href="https://www.maxmind.com">www.maxmind.com</a>
-            </p>
-            {{ end }} {{ if .Latitude }}
+            {{ if .Latitude }}
             <div class="pure-u-1 pure-u-md-1-1">
               <h2>Map</h2>
               <iframe

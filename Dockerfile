@@ -22,8 +22,11 @@ COPY --from=build /go/bin/echoip /opt/echoip/
 COPY html /opt/echoip/html
 COPY scripts/prep-maxmind.sh /opt/echoip/prep-maxmind.sh
 COPY docker-entrypoint.sh /opt/echoip/docker-entrypoint.sh
-RUN chmod +x /opt/echoip/docker-entrypoint.sh
+RUN chmod +x /opt/echoip/docker-entrypoint.sh \
+    && addgroup -S echoip && adduser -S -G echoip -H -h /opt/echoip echoip \
+    && chown echoip:echoip /opt/echoip  # dir only: GeoIP downloads land here, code stays root-owned
 
+USER echoip
 WORKDIR /opt/echoip
 
 # /health is static; start-period covers the GeoIP download in the entrypoint

@@ -269,7 +269,10 @@
               </div>
               <div id="output" class="widgetbox output"></div>
 
-              <form class="pure-form input-buttons">
+              <form
+                class="pure-form input-buttons"
+                onsubmit="event.preventDefault(); navigate()"
+              >
                 <fieldset>
                   <label for="ipInput">
                     Check another IP (optional)
@@ -278,14 +281,10 @@
                       class=""
                       type="text"
                       placeholder="IP to query"
-                      onkeyup="updateIP(this.value)"
+                      oninput="updateIP(this.value)"
                     />
                   </label>
-                  <button
-                    type="button"
-                    class="pure-button"
-                    onclick="navigate()"
-                  >
+                  <button type="submit" class="pure-button">
                     Open
                   </button>
                 </fieldset>

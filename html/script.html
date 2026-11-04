@@ -80,8 +80,9 @@
   }
 
   function updateIP(value) {
-    ip = value
-    ipQuery = `?ip=${ip}`;
+    ip = value.trim()
+    // an empty field must not leave a dangling ?ip= in the command
+    ipQuery = ip ? `?ip=${ip}` : '';
     setcommdStr()
     changeInput("ip", null)
   }

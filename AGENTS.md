@@ -5,7 +5,7 @@ Fork of `mpolden/echoip` (origin `hamidzr/echoip`, trunk `master`). Go IP lookup
 ## Commands
 
 - `make lint test`: gofmt -s check, `go vet`, `go test ./...`. Use this to verify changes.
-- `make` (default `all`) also runs `go install ./...`, which writes to `$GOPATH/bin`. The Docker build relies on that.
+- `make install` runs `go install ./...`, which writes to `$GOPATH/bin`. The Docker build relies on that (default `make` = lint + test + install).
 - `make run`: local server; expects MaxMind-named DBs at `data/{asn,city,country}.mmdb`. Without DBs, run `go run ./cmd/echoip -t html` (geo routes disabled).
 - `make docker-build`: builds the production image. `docker-push*`, `publish`, and `docker-login` publish externally; do not run unless asked.
 
@@ -19,7 +19,7 @@ Fork of `mpolden/echoip` (origin `hamidzr/echoip`, trunk `master`). Go IP lookup
 
 ## Docker and runtime
 
-- `Dockerfile`: Go builder runs `make` (lint + test + install), runtime is alpine with curl/tar for DB download.
+- `Dockerfile`: Go builder runs `make install` only (no lint or test; run `make lint test` locally), runtime is alpine with curl/tar for DB download.
 - `docker-entrypoint.sh`: downloads DBs on start if missing or older than `GEOIP_REFRESH_DAYS`, then runs `echoip -H x-forwarded-for -t html`. It does not pass `-C`, `-r`, or `-p`.
 - `scripts/prep-maxmind.sh`: fetches DBs. `GEOIP_SOURCE=dbip` (default, no credentials, DB-IP Lite city+ASN; city file also serves as country DB) or `maxmind` (needs `MAXMIND_ACC_ID` + `MAXMIND_LICENSE_KEY`). Vars listed in `env.example`.
 - Makefile `geoip-download` uses an old `GEOIP_LICENSE_KEY` URL flow; the entrypoint/script path is the one in use.

@@ -24,6 +24,10 @@ lint: check-fmt vet
 install:
 	go install ./...
 
+# point git at the tracked hooks; run once per clone
+hooks:
+	git config core.hooksPath .githooks
+
 databases := GeoLite2-City GeoLite2-Country GeoLite2-ASN
 
 $(databases):

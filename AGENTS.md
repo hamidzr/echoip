@@ -5,6 +5,7 @@ Fork of `mpolden/echoip` (origin `hamidzr/echoip`, trunk `master`). Go IP lookup
 ## Commands
 
 - `make lint test`: gofmt -s check, `go vet`, `go test ./...`. Use this to verify changes.
+- `make hooks` once per clone: sets `core.hooksPath` to `.githooks`, whose `pre-push` runs `make lint test`. Nothing else gates a push.
 - `make install` runs `go install ./...`, which writes to `$GOPATH/bin`. The Docker build relies on that (default `make` = lint + test + install).
 - `make run`: local server; expects MaxMind-named DBs at `data/{asn,city,country}.mmdb`. Without DBs, run `go run ./cmd/echoip -t html` (geo routes disabled).
 - `make docker-build`: builds the production image. `docker-push*`, `publish`, and `docker-login` publish externally; do not run unless asked.

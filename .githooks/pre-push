@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# the image build no longer runs lint or tests, so this is the gate
+
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+make lint test
